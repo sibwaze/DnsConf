@@ -7,10 +7,10 @@ Both providers have free plans, but there are some limitations
 
 ### Cloudflare limitations
 + 100 000 DNS requests per day
-+ Ipv4 DNS requests are restricted by the only one IP. But you are free to use other methods: DoH, DoT, Ipv6.
++ Ipv4 DNS requests are restricted by the only one IP. But you are free to use other methods: DoH, DoT, Ipv6
 ### NextDNS limitations
 + 300 000 DNS requests per month (still more than enough for personal use)
-+ Slow API speed is restricted by 60 requests per minute. Takes significantly more time for script to save settings.
++ Slow API speed is restricted by 60 requests per minute. Takes significantly more time for script to save settings
 
 ## Setup Credentials
 
