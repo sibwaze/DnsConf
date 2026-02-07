@@ -1,17 +1,8 @@
 package com.novibe.dns.next_dns.http.dto.request;
 
-import lombok.AllArgsConstructor;
+import com.novibe.common.base_dto.Jsonable;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 
-@Getter
-@AllArgsConstructor
-@EqualsAndHashCode
-public final class CreateRewriteDto {
-
-    private final String name;
-
-    @EqualsAndHashCode.Exclude
-    private final String content;
+public record CreateRewriteDto(String name, @EqualsAndHashCode.Exclude String content) implements Jsonable {
 
 }

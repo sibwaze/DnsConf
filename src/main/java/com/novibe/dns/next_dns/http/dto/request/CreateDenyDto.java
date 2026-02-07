@@ -1,9 +1,10 @@
 package com.novibe.dns.next_dns.http.dto.request;
 
+import com.novibe.common.base_dto.Jsonable;
 import lombok.Getter;
 
 @Getter
-public final class CreateDenyDto {
+public final class CreateDenyDto implements Jsonable {
 
     private final String id;
     private final boolean active = true;

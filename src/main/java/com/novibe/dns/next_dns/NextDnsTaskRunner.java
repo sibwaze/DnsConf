@@ -58,7 +58,6 @@ public class NextDnsTaskRunner implements DnsTaskRunner {
             Log.step("Prepare rewrites");
             Map<String, CreateRewriteDto> requests = nextDnsRewriteService.buildNewRewrites(overrides);
             List<CreateRewriteDto> createRewriteDtos = nextDnsRewriteService.cleanupOutdated(requests);
-            Log.common("Prepared %s domains to rewrite".formatted(requests.size()));
 
             Log.step("Save rewrites");
             nextDnsRewriteService.saveRewrites(createRewriteDtos);

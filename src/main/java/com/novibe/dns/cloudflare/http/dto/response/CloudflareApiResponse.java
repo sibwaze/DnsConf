@@ -1,12 +1,13 @@
 package com.novibe.dns.cloudflare.http.dto.response;
 
 import com.google.gson.annotations.SerializedName;
+import com.novibe.common.base_dto.Jsonable;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class CloudflareApiResponse<T> {
+public class CloudflareApiResponse<T> implements Jsonable {
 
     private List<CloudflareApiMessage> errors;
     private List<CloudflareApiMessage> messages;

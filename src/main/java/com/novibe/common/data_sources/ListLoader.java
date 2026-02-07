@@ -5,29 +5,29 @@ import lombok.Cleanup;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.StructuredTaskScope;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-@Profile("CLOUDFLARE")
 @Setter(onMethod_ = @Autowired)
 public abstract class ListLoader<T> {
 
     private HttpClient client;
 
-    protected abstract Stream<T> lineParser(String urlList);
+    protected abstract T toObject(String line);
 
     protected abstract String listType();
+
+    protected abstract Predicate<String> filterRelatedLines();
 
     @SneakyThrows
     @SuppressWarnings("preview")
@@ -40,8 +40,15 @@ public abstract class ListLoader<T> {
         scope.join();
         return requests.stream()
                 .map(StructuredTaskScope.Subtask::get)
-                .flatMap(this::lineParser)
+                .map(String::stripIndent)
+                .flatMap(s -> Pattern.compile("\\r?\\n").splitAsStream(s))
+                .parallel()
+                .filter(line -> !line.isBlank())
+                .filter(line -> !line.startsWith("#"))
+                .map(String::toLowerCase)
+                .filter(filterRelatedLines())
                 .distinct()
+                .map(this::toObject)
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
@@ -52,6 +59,13 @@ public abstract class ListLoader<T> {
                 .GET()
                 .build();
         return client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)).body();
+    }
+
+    protected String removeWWW(String domain) {
+        if (domain.startsWith("www.")) {
+            return domain.substring("www.".length());
+        }
+        return domain;
     }
 
 }

@@ -4,10 +4,14 @@ package com.novibe;
 import com.novibe.common.DnsTaskRunner;
 import com.novibe.common.config.EnvironmentVariables;
 import com.novibe.common.util.Log;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 
 public class App {
+
+    public static ApplicationContext context;
+
     static void main() {
         String provider = EnvironmentVariables.DNS.toUpperCase();
 
@@ -24,10 +28,10 @@ public class App {
             }
         };
 
-        AnnotationConfigApplicationContext context =
-                new AnnotationConfigApplicationContext(dnsBasePackage, commonsBasePackage);
+        context = new AnnotationConfigApplicationContext(dnsBasePackage, commonsBasePackage);
 
         DnsTaskRunner runner = context.getBean(DnsTaskRunner.class);
         runner.run();
     }
+
 }

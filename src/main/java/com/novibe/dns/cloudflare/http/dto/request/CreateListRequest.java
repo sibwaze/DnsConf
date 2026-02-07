@@ -1,10 +1,11 @@
 package com.novibe.dns.cloudflare.http.dto.request;
 
+import com.novibe.common.base_dto.Jsonable;
 import com.novibe.dns.cloudflare.http.dto.Item;
 import lombok.Builder;
 
 import java.util.List;
 
 @Builder
-public record CreateListRequest(String name, String type, String description, List<Item> items) {
+public record CreateListRequest(String name, String type, String description, List<Item> items) implements Jsonable {
 }

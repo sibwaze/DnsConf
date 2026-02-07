@@ -9,10 +9,12 @@ import com.novibe.dns.cloudflare.http.dto.response.rule.SingleRuleApiResponse;
 import lombok.Cleanup;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.Synchronized;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.StructuredTaskScope;
 import java.util.stream.Collectors;
@@ -45,20 +47,22 @@ public class RuleService {
 
     @SneakyThrows
     @SuppressWarnings("preview")
-    public void createNewOverrideRules(Map<String, List<GatewayListDto>> lists) {
+    public void createNewOverrideRulesCollisionAware(Map<String, List<GatewayListDto>> lists, List<GatewayRuleDto> existingRules) {
+        PrecedenceCounter precedenceCounter = providePrecedenceCounter(existingRules);
         @Cleanup var scope = StructuredTaskScope.open();
         for (Map.Entry<String, List<GatewayListDto>> entry : lists.entrySet()) {
             String overrideIp = entry.getKey();
             List<GatewayListDto> list = entry.getValue();
-            scope.fork(() -> createNewOverrideRule(list, overrideIp));
+            scope.fork(() -> createNewOverrideRule(list, overrideIp, precedenceCounter.next()));
         }
         scope.join();
     }
 
-    private void createNewOverrideRule(List<GatewayListDto> lists, String overrideIp) {
+    private void createNewOverrideRule(List<GatewayListDto> lists, String overrideIp, int precedence) {
         String traffic = makeTrafficExpression(lists);
         CreateRuleRequest rule = CreateRuleRequest.builder()
                 .name(RULES_LIST_NAME_PREFIX + " override to IP -> " + overrideIp)
+                .precedence(precedence)
                 .action("override")
                 .description(sessionId)
                 .filters(List.of("dns"))
@@ -73,24 +77,36 @@ public class RuleService {
         }
     }
 
-    public void removeOldRules() {
-        List<String> oldIds = cloudflareRuleClient.getRules().getResult().stream()
+    public List<GatewayRuleDto> obtainExistingRules() {
+        return cloudflareRuleClient.getRules().getResult();
+    }
+
+    public List<GatewayRuleDto> removeOldRules(List<GatewayRuleDto> rules) {
+        List<GatewayRuleDto> removeList = rules.stream()
                 .filter(rule -> rule.getName().startsWith(RULES_LIST_NAME_PREFIX))
                 .filter(rule -> !sessionId.equals(rule.getDescription()))
-                .map(GatewayRuleDto::getId)
                 .toList();
-        Log.io("Removing old rules...");
+        Log.io("Removing " + removeList.size() + " old rules...");
         int counter = 0;
-        for (String id : oldIds) {
+        for (GatewayRuleDto rule : removeList) {
+            String id = rule.getId();
             SingleRuleApiResponse result = cloudflareRuleClient.removeRuleById(id);
             if (!result.isSuccess()) {
                 Log.fail("Failed to remove old rule with id %s: %s".formatted(id, result.getErrors()));
             } else {
-                Log.progress(++counter + "/" + oldIds.size());
+                Log.progress(++counter + "/" + removeList.size());
+                rules.remove(rule);
             }
         }
-        Log.common("\n%s of %s old rules have been removed".formatted(counter, oldIds.size()));
+        Log.common("\n%s of %s old rules have been removed".formatted(counter, removeList.size()));
+        return rules;
+    }
 
+    private PrecedenceCounter providePrecedenceCounter(List<GatewayRuleDto> existingRules) {
+        Set<Integer> existingValues = existingRules.stream()
+                .map(GatewayRuleDto::getPrecedence)
+                .collect(Collectors.toSet());
+        return new PrecedenceCounter(existingValues);
     }
 
     private String makeTrafficExpression(List<GatewayListDto> lists) {
@@ -102,6 +118,21 @@ public class RuleService {
         return listIds.stream()
                 .map("any(dns.domains[*] in $%s)"::formatted)
                 .collect(Collectors.joining(" or "));
+    }
+
+    @RequiredArgsConstructor
+    private static class PrecedenceCounter {
+
+        private final Set<Integer> skipSet;
+        private int number = 1;
+
+        @Synchronized
+        private int next() {
+            while (skipSet.contains(number)) {
+                number++;
+            }
+            return number++;
+        }
     }
 
 }

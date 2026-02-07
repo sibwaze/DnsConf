@@ -1,6 +1,6 @@
 package com.novibe.dns.next_dns.http;
 
-import com.novibe.common.exception.NextDnsHttpError;
+import com.novibe.common.exception.DnsHttpError;
 import com.novibe.common.util.Log;
 import com.novibe.dns.next_dns.http.dto.response.NextDnsResponse;
 import lombok.SneakyThrows;
@@ -35,15 +35,14 @@ public class NextDnsRateLimitedApiProcessor {
                     Log.progress("Current success progress: " + ++successCounter + "/" + requestList.size());
                     waveCounter++;
                 }
-            } catch (NextDnsHttpError e) {
+            } catch (DnsHttpError e) {
                 if (e.getCode() == 524 || e.getCode() == 429) {
                     requestQueue.add(requestDto);
                     Log.common("Sending speed: %s requests per second"
                             .formatted((double) waveCounter / 60));
-                    Log.common("Code %s. Api rate limit has reached. Waiting for reset: %s seconds"
-                            .formatted(e.getCode(), waitSeconds));
-                    runWaitTimer(waitSeconds);
-                    Log.common("Continue...");
+                    Log.common("Code %s. Api rate limit has reached".formatted(e.getCode()));
+                    runResetWaitTimer(waitSeconds);
+                    Log.io("Continue...");
                     waveCounter = 0;
                 } else {
                     Log.fail(e.toString());
@@ -51,11 +50,15 @@ public class NextDnsRateLimitedApiProcessor {
                 }
             }
         }
+        Log.common("\nCompleted");
     }
 
     @SneakyThrows
-    private void runWaitTimer(int seconds) {
-        Thread.sleep(Duration.of(seconds, ChronoUnit.SECONDS));
+    private void runResetWaitTimer(int seconds) {
+        for (int timer = seconds; timer > 0; timer--) {
+            Thread.sleep(Duration.of(1, ChronoUnit.SECONDS));
+            Log.progress("Waiting for reset: " + timer + " seconds");
+        }
     }
 
 }

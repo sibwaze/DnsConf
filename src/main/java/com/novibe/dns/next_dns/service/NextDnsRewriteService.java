@@ -37,7 +37,7 @@ public class NextDnsRewriteService {
             String domain = existingRewrite.name();
             String oldIp = existingRewrite.content();
             CreateRewriteDto request = newRewriteRequests.get(domain);
-            if (nonNull(request) && !request.getContent().equals(oldIp)) {
+            if (nonNull(request) && !request.content().equals(oldIp)) {
                 outdatedIds.add(existingRewrite.id());
             } else {
                 newRewriteRequests.remove(domain);

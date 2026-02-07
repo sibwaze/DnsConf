@@ -1,7 +1,8 @@
 package com.novibe.common;
 
 import com.google.gson.Gson;
-import com.novibe.common.exception.NextDnsHttpError;
+import com.novibe.common.base_dto.Jsonable;
+import com.novibe.common.exception.DnsHttpError;
 import com.novibe.common.util.Log;
 import lombok.AccessLevel;
 import lombok.Setter;
@@ -44,7 +45,7 @@ public abstract class HttpRequestSender {
         return sendRequest(GET, path, null, responseType);
     }
 
-    public <T, R> T post(String path, R requestBody, Class<T> responseType) {
+    public <T, R extends Jsonable> T post(String path, R requestBody, Class<T> responseType) {
         return sendRequest(POST, path, requestBody, responseType);
     }
 
@@ -54,13 +55,13 @@ public abstract class HttpRequestSender {
     }
 
     @SneakyThrows
-    protected <T, R> T sendRequest(String method, String path, R body, Class<T> responseBody) {
+    protected <T, R extends Jsonable> T sendRequest(String method, String path, R body, Class<T> responseBody) {
         URI uri = URI.create(apiUrl() + (isNull(path) ? "" : path));
         HttpRequest.BodyPublisher requestBody;
         if (isNull(body)) {
             requestBody = HttpRequest.BodyPublishers.noBody();
         } else {
-            requestBody = HttpRequest.BodyPublishers.ofString(jsonMapper.toJson(body));
+            requestBody = HttpRequest.BodyPublishers.ofString(body.toJson());
         }
         semaphore.acquire();
         HttpRequest request = HttpRequest.newBuilder(uri)
@@ -71,11 +72,8 @@ public abstract class HttpRequestSender {
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         semaphore.release();
         if (response.statusCode() > 299) {
-            Log.fail("Request failed! Status: %s for %s %s\nReason: %s ".formatted(
-                    response.statusCode(),
-                    response.request().method(),
-                    response.request().uri(),
-                    response.body()));
+            DnsHttpError httpError = new DnsHttpError(response, body);
+            Log.fail(httpError.getMessage());
             if (response.statusCode() == 401) {
                 react401();
                 System.exit(1);
@@ -84,7 +82,7 @@ public abstract class HttpRequestSender {
                 react403();
                 System.exit(1);
             } else {
-                throw new NextDnsHttpError(response.statusCode(), response.body());
+                throw httpError;
             }
         }
         if (response.body().isEmpty()) {
