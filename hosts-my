@@ -1,19 +1,20 @@
 # My hostlist
 
 # Tidal
-204.12.192.221 tidal.com
-204.12.192.221 images.tidal.com
-204.12.192.222 api-global.squareup.com
-204.12.192.222 api.squareup.com
-204.12.192.222 api.tidal.com
-204.12.192.222 auth.tidal.com
-204.12.192.222 dd.tidal.com
-204.12.192.222 fsu.fa.tidal.com
-204.12.192.222 geolocation.onetrust.com
-204.12.192.222 link.tidal.com
-204.12.192.222 listen.tidal.com
-204.12.192.222 login.tidal.com
-204.12.192.222 resources.tidal.com
+89.108.98.20 tidal.com
+89.108.98.20 images.tidal.com
+89.108.98.20 api-global.squareup.com
+89.108.98.20 api.squareup.com
+134.0.118.88 api.tidal.com
+185.246.223.127 auth.tidal.com
+89.108.98.20 dd.tidal.com
+89.108.98.20 fsu.fa.tidal.com
+89.108.98.20 geolocation.onetrust.com
+89.108.98.20 link.tidal.com
+89.108.98.20 listen.tidal.com
+185.246.223.127 login.tidal.com
+89.108.98.20 resources.tidal.com
+
 # ntc-party
 30.255.77.28 ntc.party
 130.255.77.28 ntc.party
